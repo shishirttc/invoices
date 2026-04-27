@@ -11,15 +11,23 @@ if (isset($_GET['delete'])) {
 require_once '../includes/header.php';
 require_once '../includes/sidebar.php';
 ?>
-<div class="flex justify-between items-center mb-6">
+<div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
     <h2 class="text-2xl font-bold text-gray-800">Services</h2>
-    <a href="add_service.php" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+    
+    <div class="relative w-full md:w-96">
+        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+            <i class="fas fa-search"></i>
+        </span>
+        <input type="text" id="serviceSearch" placeholder="Search client, page or service..." class="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+
+    <a href="add_service.php" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center whitespace-nowrap">
         <i class="fas fa-plus mr-2"></i> Add Service
     </a>
 </div>
 
-<div class="bg-white shadow rounded-lg overflow-hidden">
-    <table class="min-w-full divide-y divide-gray-200">
+<div class="bg-white shadow rounded-lg overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200" id="servicesTable">
         <thead class="bg-gray-50">
             <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client / Page</th>
@@ -39,12 +47,12 @@ require_once '../includes/sidebar.php';
             ");
             while ($row = $stmt->fetch()):
             ?>
-            <tr>
+            <tr class="service-row">
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="font-medium text-gray-900"><?= htmlspecialchars($row['client_name']) ?></div>
-                    <div class="text-sm text-gray-500"><?= htmlspecialchars($row['page_name']) ?></div>
+                    <div class="font-medium text-gray-900 search-client"><?= htmlspecialchars($row['client_name']) ?></div>
+                    <div class="text-sm text-gray-500 search-page"><?= htmlspecialchars($row['page_name']) ?></div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap"><?= htmlspecialchars($row['service_type']) ?></td>
+                <td class="px-6 py-4 whitespace-nowrap search-type"><?= htmlspecialchars($row['service_type']) ?></td>
                 <td class="px-6 py-4 whitespace-nowrap font-semibold">৳<?= number_format($row['total'], 2) ?></td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <a href="edit_service.php?id=<?= $row['id'] ?>" class="text-indigo-600 hover:text-indigo-900 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
@@ -55,4 +63,23 @@ require_once '../includes/sidebar.php';
         </tbody>
     </table>
 </div>
+
+<script>
+    document.getElementById('serviceSearch').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const rows = document.querySelectorAll('.service-row');
+        
+        rows.forEach(row => {
+            const clientName = row.querySelector('.search-client').textContent.toLowerCase();
+            const pageName = row.querySelector('.search-page').textContent.toLowerCase();
+            const serviceType = row.querySelector('.search-type').textContent.toLowerCase();
+            
+            if (clientName.includes(searchTerm) || pageName.includes(searchTerm) || serviceType.includes(searchTerm)) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+    });
+</script>
 <?php require_once '../includes/footer.php'; ?>

@@ -26,7 +26,7 @@ require_once '../includes/sidebar.php';
     </a>
 </div>
 
-<div class="bg-white shadow rounded-lg overflow-hidden">
+<div class="bg-white shadow rounded-lg overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200" id="clientsTable">
         <thead class="bg-gray-50">
             <tr>

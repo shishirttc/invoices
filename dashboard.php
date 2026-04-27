@@ -32,11 +32,11 @@ require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 ?>
 
-<div class="mb-6 flex justify-between items-center">
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <h2 class="text-2xl font-bold text-gray-800">Dashboard</h2>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
     <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
         <div class="flex items-center">
             <div class="p-2 rounded-full bg-blue-100 text-blue-500 mr-3">
@@ -132,7 +132,7 @@ require_once 'includes/sidebar.php';
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Unpaid</span>
                         <?php endif; ?>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= date('M d, Y', strtotime($invoice['created_at'])) ?></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= date('d F, Y', strtotime($invoice['created_at'])) ?></td>
                 </tr>
                 <?php 
                     endwhile; 

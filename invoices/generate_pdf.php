@@ -102,7 +102,7 @@ $html = '
                 <td class="text-right">
                     <div class="invoice-title">INVOICE</div>
                     <div># '.$invoice['invoice_number'].'</div>
-                    <div>Date: '.date('M d, Y', strtotime($invoice['created_at'])).'</div>
+                    <div>Date: '.date('d F, Y', strtotime($invoice['created_at'])).'</div>
                     <div style="margin-top: 8px;">
                         Status: <span class="status '.($invoice['status']=='Paid'?'paid':'unpaid').'">'.strtoupper($invoice['status']).'</span>
                     </div>
@@ -205,7 +205,7 @@ $html = '
             foreach($payments as $p) {
                 $html .= '
                 <tr>
-                    <td>'.date('M d, Y', strtotime($p['payment_date'])).'</td>
+                    <td>'.date('d F, Y', strtotime($p['payment_date'])).'</td>
                     <td>'.$p['payment_method'].'</td>
                     <td style="color: #666; font-size: 11px;">'.$p['note'].'</td>
                     <td class="text-right text-bold">TK '.number_format($p['amount'], 2).'</td>

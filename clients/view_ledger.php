@@ -8,12 +8,37 @@ if (!isset($_GET['id'])) {
 
 $client_id = $_GET['id'];
 
+// Get Filter Value
+$filter = $_GET['filter'] ?? 'all'; // Default: all
+
+$date_query_inv = "";
+$date_query_pay = "";
+
+switch ($filter) {
+    case 'today':
+        $date_query_inv = " AND DATE(created_at) = CURDATE()";
+        $date_query_pay = " AND DATE(payment_date) = CURDATE()";
+        break;
+    case 'weekly':
+        $date_query_inv = " AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)";
+        $date_query_pay = " AND YEARWEEK(payment_date, 1) = YEARWEEK(CURDATE(), 1)";
+        break;
+    case 'monthly':
+        $date_query_inv = " AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')";
+        $date_query_pay = " AND DATE_FORMAT(payment_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')";
+        break;
+    case 'yearly':
+        $date_query_inv = " AND YEAR(created_at) = YEAR(CURDATE())";
+        $date_query_pay = " AND YEAR(payment_date) = YEAR(CURDATE())";
+        break;
+}
+
 // Handle Credit Update
 if (isset($_POST['update_balance'])) {
     $new_balance = $_POST['balance'];
     $stmt = $pdo->prepare("UPDATE clients SET balance = ? WHERE id = ?");
     $stmt->execute([$new_balance, $client_id]);
-    header("Location: view_ledger.php?id=" . $client_id);
+    header("Location: view_ledger.php?id=" . $client_id . "&filter=" . $filter);
     exit;
 }
 
@@ -27,47 +52,47 @@ if (!$client) {
     exit;
 }
 
-// Financial Summary
+// Financial Summary (Filtered)
 $stmt = $pdo->prepare("
     SELECT 
         SUM(total_amount) as total_billed,
         SUM(applied_credit) as total_credit_applied
     FROM invoices 
-    WHERE client_id = ?
+    WHERE client_id = ? $date_query_inv
 ");
 $stmt->execute([$client_id]);
 $invoice_stats = $stmt->fetch();
 $total_billed = $invoice_stats['total_billed'] ?: 0;
-$total_credit_applied = $invoice_stats['total_credit_applied'] ?: 0;
 
-// Total Paid (Cash/Bank etc)
+// Total Paid (Filtered)
 $pay_stmt = $pdo->prepare("
     SELECT SUM(p.amount) 
     FROM payments p 
     JOIN invoices i ON p.invoice_id = i.id 
-    WHERE i.client_id = ?
+    WHERE i.client_id = ? $date_query_pay
 ");
 $pay_stmt->execute([$client_id]);
 $total_paid = $pay_stmt->fetchColumn() ?: 0;
 
-// Calculate Balance Due accurately by summing individual invoice dues
+// Calculate Balance Due (ALWAYS Lifetime for accuracy)
 $balance_due = 0;
 $inv_stmt = $pdo->prepare("
     SELECT i.id, i.total_amount, i.applied_credit,
-    (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id = i.id) as paid
+    (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id = i.id) as paid,
+    (SELECT COALESCE(SUM(discount), 0) FROM payments WHERE invoice_id = i.id) as discount
     FROM invoices i
     WHERE i.client_id = ?
 ");
 $inv_stmt->execute([$client_id]);
 while($row = $inv_stmt->fetch()) {
-    $invoice_due = $row['total_amount'] - $row['applied_credit'] - $row['paid'];
+    $invoice_due = $row['total_amount'] - $row['applied_credit'] - $row['paid'] - $row['discount'];
     if ($invoice_due > 0) {
         $balance_due += $invoice_due;
     }
 }
 
 // Recent Invoices
-$invoices = $pdo->prepare("SELECT * FROM invoices WHERE client_id = ? ORDER BY id DESC");
+$invoices = $pdo->prepare("SELECT * FROM invoices WHERE client_id = ? $date_query_inv ORDER BY id DESC");
 $invoices->execute([$client_id]);
 $invoices = $invoices->fetchAll();
 
@@ -76,7 +101,7 @@ $payments = $pdo->prepare("
     SELECT p.*, i.invoice_number 
     FROM payments p 
     JOIN invoices i ON p.invoice_id = i.id 
-    WHERE i.client_id = ? 
+    WHERE i.client_id = ? $date_query_pay
     ORDER BY p.id DESC
 ");
 $payments->execute([$client_id]);
@@ -97,19 +122,45 @@ if ($base_url == '/' || $base_url == '\\') {
 $public_link = $protocol . "://" . $host . $base_url . "/public_ledger.php?token=" . $client['ledger_token'];
 ?>
 
-<div class="flex justify-between items-center mb-6">
-    <h2 class="text-2xl font-bold text-gray-800">Client Ledger: <?= htmlspecialchars($client['name']) ?></h2>
-    <div class="flex gap-2">
-        <button onclick="copyToClipboard('<?= $public_link ?>')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center gap-2" title="Share with Customer">
-            <i class="fas fa-share-alt"></i> Share Link
+<div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
+    <div class="flex flex-col md:flex-row md:items-center gap-4 w-full xl:w-auto">
+        <h2 class="text-2xl font-bold text-gray-800">Ledger: <?= htmlspecialchars($client['name']) ?></h2>
+        
+        <!-- Filter Dropdown -->
+        <form method="GET" class="flex items-center gap-2 bg-white p-1 rounded-lg border shadow-sm">
+            <input type="hidden" name="id" value="<?= $client_id ?>">
+            <select name="filter" onchange="this.form.submit()" class="text-sm border-none focus:ring-0 bg-transparent font-semibold text-blue-600 cursor-pointer">
+                <option value="all" <?= $filter == 'all' ? 'selected' : '' ?>>All Time Statement</option>
+                <option value="today" <?= $filter == 'today' ? 'selected' : '' ?>>Today</option>
+                <option value="weekly" <?= $filter == 'weekly' ? 'selected' : '' ?>>This Week</option>
+                <option value="monthly" <?= $filter == 'monthly' ? 'selected' : '' ?>>This Month</option>
+                <option value="yearly" <?= $filter == 'yearly' ? 'selected' : '' ?>>This Year</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="flex flex-wrap gap-2 w-full xl:w-auto">
+        <button onclick="copyToClipboard('<?= $public_link ?>')" class="flex-1 sm:flex-none justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center gap-2" title="Share Ledger Link">
+            <i class="fas fa-share-alt"></i> Ledger
         </button>
-        <button onclick="document.getElementById('creditModal').classList.remove('hidden')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-            <i class="fas fa-coins mr-2"></i> Manage Credit
-        </button>
-        <a href="edit_client.php?id=<?= $client['id'] ?>" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-            <i class="fas fa-edit mr-2"></i> Edit Client
+        <?php
+        $wa_phone = preg_replace('/[^0-9]/', '', $client['phone']);
+        if (strlen($wa_phone) == 11 && substr($wa_phone, 0, 1) == '0') {
+            $wa_phone = '88' . $wa_phone;
+        }
+        $wa_message = "Hello " . $client['name'] . ",\n\n*Md. Salahuddin Shishir*\n+8801758330079\n\nThis is your current balance update from *Siddik IT Ltd*.\n\n*Total Billed*: ৳" . number_format($total_billed, 2) . "\n*Total Paid*: ৳" . number_format($total_paid, 2) . "\n*Current Due*: ৳" . number_format($balance_due, 2) . "\n\nঅনুগ্রহ করে যত দ্রুত সম্ভব পেমেন্টটি পরিশোধ করুন। ধন্যবাদ\n\nYou can also view your full statement here: " . $public_link;
+        $wa_url = "https://wa.me/" . $wa_phone . "?text=" . urlencode($wa_message);
+        ?>
+        <a href="<?= $wa_url ?>" target="_blank" class="flex-1 sm:flex-none justify-center bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center gap-2">
+            <i class="fab fa-whatsapp"></i> WhatsApp
         </a>
-        <a href="list_clients.php" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+        <button onclick="document.getElementById('creditModal').classList.remove('hidden')" class="flex-1 sm:flex-none justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2">
+            <i class="fas fa-coins"></i> Credit
+        </button>
+        <a href="edit_client.php?id=<?= $client['id'] ?>" class="flex-1 sm:flex-none justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <a href="list_clients.php" class="flex-1 sm:flex-none justify-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2">
             Back
         </a>
     </div>
@@ -188,7 +239,7 @@ function copyToClipboard(text) {
     <!-- Activity Sections -->
     <div class="lg:col-span-2 space-y-8">
         <!-- Invoices Section -->
-        <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="bg-white shadow rounded-lg overflow-x-auto">
             <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
                 <h3 class="font-bold text-gray-800">Invoices</h3>
                 <a href="../invoices/create_invoice.php?client_id=<?= $client_id ?>" class="text-blue-600 hover:text-blue-800 text-sm font-bold">+ Create Invoice</a>
@@ -227,7 +278,7 @@ function copyToClipboard(text) {
         </div>
 
         <!-- Payments Section -->
-        <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="bg-white shadow rounded-lg overflow-x-auto">
             <div class="bg-gray-50 px-6 py-4 border-b">
                 <h3 class="font-bold text-gray-800">Recent Payments</h3>
             </div>
@@ -246,7 +297,7 @@ function copyToClipboard(text) {
                     <?php else: ?>
                         <?php foreach($payments as $p): ?>
                         <tr>
-                            <td class="px-6 py-4 text-sm text-gray-900"><?= date('M d, Y', strtotime($p['payment_date'])) ?></td>
+                            <td class="px-6 py-4 text-sm text-gray-900"><?= date('d F, Y', strtotime($p['payment_date'])) ?></td>
                             <td class="px-6 py-4 text-sm text-gray-500"><?= htmlspecialchars($p['invoice_number']) ?></td>
                             <td class="px-6 py-4 text-sm text-gray-500">
                                 <div class="font-medium text-gray-800"><?= htmlspecialchars($p['payment_method']) ?></div>

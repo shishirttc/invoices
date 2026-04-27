@@ -11,15 +11,23 @@ if (isset($_GET['delete'])) {
 require_once '../includes/header.php';
 require_once '../includes/sidebar.php';
 ?>
-<div class="flex justify-between items-center mb-6">
+<div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
     <h2 class="text-2xl font-bold text-gray-800">Invoices</h2>
-    <a href="create_invoice.php" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+    
+    <div class="relative w-full md:w-96">
+        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+            <i class="fas fa-search"></i>
+        </span>
+        <input type="text" id="invoiceSearch" placeholder="Search invoice # or client name..." class="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+
+    <a href="create_invoice.php" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center whitespace-nowrap">
         <i class="fas fa-plus mr-2"></i> Create Invoice
     </a>
 </div>
 
-<div class="bg-white shadow rounded-lg overflow-hidden">
-    <table class="min-w-full divide-y divide-gray-200">
+<div class="bg-white shadow rounded-lg overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200" id="invoicesTable">
         <thead class="bg-gray-50">
             <tr>
                 <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
@@ -50,11 +58,11 @@ require_once '../includes/sidebar.php';
                 // For display, we show only Cash Paid as requested
                 $display_paid = $row['cash_paid'];
             ?>
-            <tr>
-                <td class="px-3 py-4 whitespace-nowrap font-medium text-blue-600">
+            <tr class="invoice-row">
+                <td class="px-3 py-4 whitespace-nowrap font-medium text-blue-600 search-inv">
                     <a href="view_invoice.php?id=<?= $row['id'] ?>"><?= htmlspecialchars($row['invoice_number']) ?></a>
                 </td>
-                <td class="px-3 py-4 whitespace-nowrap"><?= htmlspecialchars($row['client_name']) ?></td>
+                <td class="px-3 py-4 whitespace-nowrap search-client"><?= htmlspecialchars($row['client_name']) ?></td>
                 <td class="px-3 py-4 whitespace-nowrap"><?= (float)$row['quantity'] ?></td>
                 <td class="px-3 py-4 whitespace-nowrap font-semibold">৳<?= number_format($row['total_amount'], 2) ?></td>
                 <td class="px-3 py-4 whitespace-nowrap text-green-600 font-semibold">৳<?= number_format($display_paid, 2) ?></td>
@@ -68,7 +76,7 @@ require_once '../includes/sidebar.php';
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Unpaid</span>
                     <?php endif; ?>
                 </td>
-                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500"><?= date('M d, Y', strtotime($row['created_at'])) ?></td>
+                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500"><?= date('d F, Y', strtotime($row['created_at'])) ?></td>
                 <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <?php
                     $wa_phone_list = preg_replace('/[^0-9]/', '', $row['phone'] ?? ''); // Fallback for safety
@@ -84,4 +92,22 @@ require_once '../includes/sidebar.php';
         </tbody>
     </table>
 </div>
+
+<script>
+    document.getElementById('invoiceSearch').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const rows = document.querySelectorAll('.invoice-row');
+        
+        rows.forEach(row => {
+            const invNum = row.querySelector('.search-inv').textContent.toLowerCase();
+            const clientName = row.querySelector('.search-client').textContent.toLowerCase();
+            
+            if (invNum.includes(searchTerm) || clientName.includes(searchTerm)) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+    });
+</script>
 <?php require_once '../includes/footer.php'; ?>

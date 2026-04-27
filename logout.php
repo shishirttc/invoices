@@ -1,7 +1,7 @@
 <?php
 session_start();
+session_unset();
 session_destroy();
-$base_path = '/invoices';
-header("Location: " . $base_path . "/login.php");
+header("Location: login.php");
 exit;
 ?>
