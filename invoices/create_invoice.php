@@ -229,7 +229,7 @@ require_once '../includes/sidebar.php';
     unitAmountInput.addEventListener('input', calculateTotals);
     quantityInput.addEventListener('input', calculateTotals);
 
-    applied_creditInput.addEventListener('input', function() {
+    appliedCreditInput.addEventListener('input', function() {
         const clientId = clientSelect.value;
         const client = allClients.find(c => c.id == clientId);
         const maxCredit = client ? parseFloat(client.balance) : 0;
@@ -257,6 +257,8 @@ require_once '../includes/sidebar.php';
             const dateStr = `${y}${m}${d}`;
             invoiceNumberDisplay.value = `INV-${dateStr}-${nextId}`;
         }
+    });
+
     // Click to apply credit
     availCreditBadge.addEventListener('click', function() {
         const balance = parseFloat(this.querySelector('span').textContent) || 0;
