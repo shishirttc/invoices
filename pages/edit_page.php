@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (!isset($_GET['id'])) {
     header("Location: list_pages.php");
@@ -24,6 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt = $pdo->prepare("UPDATE pages SET client_id = ?, page_name = ?, page_url = ? WHERE id = ?");
     $stmt->execute([$client_id, $page_name, $page_url, $id]);
     
+    // Fetch client name for logging
+    $cl_stmt = $pdo->prepare("SELECT name FROM clients WHERE id = ?");
+    $cl_stmt->execute([$client_id]);
+    $client_name = $cl_stmt->fetchColumn() ?: "Unknown";
+
+    log_activity($pdo, "Edit Page", "Updated page: $page_name for $client_name");
+
     header("Location: list_pages.php");
     exit;
 }

@@ -45,6 +45,9 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
         <a href="<?= $base_url ?>/payments/payment_history.php" class="flex items-center gap-3 px-4 py-3 rounded-lg <?= $current_dir == 'payments' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?>">
             <i class="fas fa-money-bill-wave w-5"></i> Payments
         </a>
+        <a href="<?= $base_url ?>/logs.php" class="flex items-center gap-3 px-4 py-3 rounded-lg <?= $current_page == 'logs.php' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?>">
+            <i class="fas fa-history w-5"></i> Activity Logs
+        </a>
         <a href="<?= $base_url ?>/logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-900 hover:text-white mt-auto">
             <i class="fas fa-sign-out-alt w-5"></i> Logout
         </a>

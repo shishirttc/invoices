@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (!isset($_GET['id'])) {
     header("Location: list_services.php");
@@ -17,6 +18,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt = $pdo->prepare("UPDATE services SET client_id = ?, page_id = ?, service_type = ?, charge = ? WHERE id = ?");
     $stmt->execute([$client_id, $page_id, $service_type, $charge, $id]);
     
+    // Fetch details for logging
+    $log_stmt = $pdo->prepare("SELECT c.name as client_name, p.page_name FROM clients c JOIN pages p ON p.client_id = c.id WHERE p.id = ?");
+    $log_stmt->execute([$page_id]);
+    $log_data = $log_stmt->fetch();
+    $client_name = $log_data['client_name'] ?? 'Unknown';
+    $page_name = $log_data['page_name'] ?? 'Unknown';
+
+    log_activity($pdo, "Edit Service", "Updated service: $service_type ($charge BDT) for $client_name ($page_name)");
+
     header("Location: list_services.php");
     exit;
 }

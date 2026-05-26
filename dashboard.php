@@ -6,9 +6,9 @@ $total_clients = $pdo->query("SELECT COUNT(*) FROM clients")->fetchColumn();
 $total_invoices = $pdo->query("SELECT COUNT(*) FROM invoices")->fetchColumn();
 
 // Fetch Pending Payments (Invoices with Unpaid or Partial status)
-// Total minus sum of payments
+// Total minus applied credit minus sum of payments
 $stmt = $pdo->query("
-    SELECT SUM(total_amount - (
+    SELECT SUM(total_amount - applied_credit - (
         SELECT COALESCE(SUM(amount), 0) 
         FROM payments 
         WHERE payments.invoice_id = invoices.id
@@ -107,13 +107,21 @@ require_once 'includes/sidebar.php';
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 <?php
-                $stmt = $pdo->query("SELECT i.*, c.name as client_name FROM invoices i JOIN clients c ON i.client_id = c.id ORDER BY i.created_at DESC LIMIT 5");
+                $stmt = $pdo->query("
+                    SELECT i.*, c.name as client_name,
+                           (i.total_amount - i.applied_credit - COALESCE((SELECT SUM(amount) FROM payments WHERE invoice_id = i.id), 0)) as due_amount
+                    FROM invoices i 
+                    JOIN clients c ON i.client_id = c.id 
+                    ORDER BY i.created_at DESC 
+                    LIMIT 5
+                ");
                 if ($stmt->rowCount() > 0):
                     while ($invoice = $stmt->fetch()):
                 ?>
@@ -123,6 +131,9 @@ require_once 'includes/sidebar.php';
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><?= htmlspecialchars($invoice['client_name']) ?></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">৳<?= number_format($invoice['total_amount'], 2) ?></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold <?= $invoice['due_amount'] <= 0 ? 'text-green-600' : 'text-red-600' ?>">
+                        ৳<?= number_format($invoice['due_amount'], 2) ?>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <?php if ($invoice['status'] == 'Paid'): ?>
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Paid</span>

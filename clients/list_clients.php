@@ -1,9 +1,20 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
-    $pdo->prepare("DELETE FROM clients WHERE id = ?")->execute([$id]);
+    
+    // Fetch details for logging
+    $stmt = $pdo->prepare("SELECT name FROM clients WHERE id = ?");
+    $stmt->execute([$id]);
+    $client_name = $stmt->fetchColumn();
+
+    if ($client_name) {
+        $pdo->prepare("DELETE FROM clients WHERE id = ?")->execute([$id]);
+        log_activity($pdo, "Delete Client", "Deleted client: $client_name");
+    }
+
     header("Location: list_clients.php");
     exit;
 }
@@ -33,7 +44,7 @@ require_once '../includes/sidebar.php';
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due/Credit</th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
         </thead>
@@ -41,6 +52,24 @@ require_once '../includes/sidebar.php';
             <?php
             $stmt = $pdo->query("SELECT * FROM clients ORDER BY id DESC");
             while ($row = $stmt->fetch()):
+                // Calculate Balance Due exactly like view_ledger.php
+                $balance_due = 0;
+                $inv_stmt = $pdo->prepare("
+                    SELECT i.total_amount, i.applied_credit,
+                    (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id = i.id) as paid,
+                    (SELECT COALESCE(SUM(discount), 0) FROM payments WHERE invoice_id = i.id) as discount
+                    FROM invoices i
+                    WHERE i.client_id = ?
+                ");
+                $inv_stmt->execute([$row['id']]);
+                while($inv = $inv_stmt->fetch()) {
+                    $invoice_due = $inv['total_amount'] - $inv['applied_credit'] - $inv['paid'] - $inv['discount'];
+                    if ($invoice_due > 0) {
+                        $balance_due += $invoice_due;
+                    }
+                }
+                
+                $credit_balance = $row['balance'];
             ?>
             <tr class="client-row">
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -50,7 +79,27 @@ require_once '../includes/sidebar.php';
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap search-company"><?= htmlspecialchars($row['company_name']) ?></td>
                 <td class="px-6 py-4 whitespace-nowrap"><?= htmlspecialchars($row['phone']) ?></td>
-                <td class="px-6 py-4 whitespace-nowrap"><?= htmlspecialchars($row['email']) ?></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex flex-col gap-1">
+                        <?php if ($balance_due > 0): ?>
+                            <div class="flex items-center gap-2">
+                                <span class="text-black font-bold text-sm">৳<?= number_format($balance_due, 2) ?></span>
+                                <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-red-600 text-white">Due</span>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($credit_balance > 0): ?>
+                            <div class="flex items-center gap-2">
+                                <span class="text-black font-bold text-sm">৳<?= number_format($credit_balance, 2) ?></span>
+                                <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-green-600 text-white">Credit</span>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($balance_due <= 0 && $credit_balance <= 0): ?>
+                            <span class="text-gray-400 text-sm">Clear</span>
+                        <?php endif; ?>
+                    </div>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <a href="view_ledger.php?id=<?= $row['id'] ?>" class="text-green-600 hover:text-green-900 mr-3" title="View Ledger"><i class="fas fa-book"></i> Ledger</a>
                     <a href="edit_client.php?id=<?= $row['id'] ?>" class="text-indigo-600 hover:text-indigo-900 mr-3" title="Edit"><i class="fas fa-edit"></i> Edit</a>

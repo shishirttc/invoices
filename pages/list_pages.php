@@ -1,9 +1,20 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
-    $pdo->prepare("DELETE FROM pages WHERE id = ?")->execute([$id]);
+    
+    // Fetch details for logging
+    $stmt = $pdo->prepare("SELECT p.page_name, c.name as client_name FROM pages p JOIN clients c ON p.client_id = c.id WHERE p.id = ?");
+    $stmt->execute([$id]);
+    $page = $stmt->fetch();
+
+    if ($page) {
+        $pdo->prepare("DELETE FROM pages WHERE id = ?")->execute([$id]);
+        log_activity($pdo, "Delete Page", "Deleted page: {$page['page_name']} (Client: {$page['client_name']})");
+    }
+
     header("Location: list_pages.php");
     exit;
 }

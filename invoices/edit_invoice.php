@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (!isset($_GET['id'])) {
     header("Location: list_invoices.php");
@@ -54,6 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt = $pdo->prepare("UPDATE invoices SET unit_amount = ?, quantity = ?, total_amount = ?, applied_credit = ?, notes = ?, status = ?, created_at = ? WHERE id = ?");
     $stmt->execute([$unit_amount, $quantity, $total_amount, $applied_credit, $notes, $status, $created_at, $id]);
     
+    // Fetch details for logging
+    $log_stmt = $pdo->prepare("SELECT c.name as client_name, p.page_name FROM clients c JOIN services s ON c.id = s.client_id JOIN pages p ON s.page_id = p.id WHERE s.id = ?");
+    $log_stmt->execute([$invoice['service_id']]);
+    $log_data = $log_stmt->fetch();
+    $client_name = $log_data['client_name'] ?? 'Unknown';
+    $page_name = $log_data['page_name'] ?? 'Unknown';
+
+    log_activity($pdo, "Edit Invoice", "Updated invoice #{$invoice['invoice_number']} for $client_name ($page_name). New Amount: $total_amount BDT");
+
     header("Location: view_invoice.php?id=" . $id);
     exit;
 }

@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = $_POST['name'];
@@ -13,6 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt = $pdo->prepare("INSERT INTO clients (name, company_name, phone, email, address, notes, ledger_token) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([$name, $company_name, $phone, $email, $address, $notes, $ledger_token]);
     
+    log_activity($pdo, "Add Client", "Added new client: $name");
+
     header("Location: list_clients.php");
     exit;
 }

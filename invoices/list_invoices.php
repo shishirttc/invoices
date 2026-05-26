@@ -1,9 +1,28 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
-    $pdo->prepare("DELETE FROM invoices WHERE id = ?")->execute([$id]);
+    
+    // Fetch details for logging before deleting
+    $stmt = $pdo->prepare("
+        SELECT i.invoice_number, c.name as client_name, p.page_name 
+        FROM invoices i 
+        JOIN clients c ON i.client_id = c.id 
+        LEFT JOIN services s ON i.service_id = s.id
+        LEFT JOIN pages p ON s.page_id = p.id
+        WHERE i.id = ?
+    ");
+    $stmt->execute([$id]);
+    $inv = $stmt->fetch();
+
+    if ($inv) {
+        $details = "Deleted invoice #{$inv['invoice_number']} for {$inv['client_name']} ({$inv['page_name']})";
+        $pdo->prepare("DELETE FROM invoices WHERE id = ?")->execute([$id]);
+        log_activity($pdo, "Delete Invoice", $details);
+    }
+
     header("Location: list_invoices.php");
     exit;
 }
@@ -18,7 +37,7 @@ require_once '../includes/sidebar.php';
         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
             <i class="fas fa-search"></i>
         </span>
-        <input type="text" id="invoiceSearch" placeholder="Search invoice # or client name..." class="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" id="invoiceSearch" placeholder="Search invoice #, client or page..." class="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
     </div>
 
     <a href="create_invoice.php" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center whitespace-nowrap">
@@ -44,11 +63,13 @@ require_once '../includes/sidebar.php';
         <tbody class="bg-white divide-y divide-gray-200">
             <?php
             $stmt = $pdo->query("
-                SELECT i.*, c.name as client_name,
+                SELECT i.*, c.name as client_name, c.phone, p_name.page_name,
                 (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id = i.id) as cash_paid,
                 (SELECT COALESCE(SUM(discount), 0) FROM payments WHERE invoice_id = i.id) as total_discount
                 FROM invoices i 
                 JOIN clients c ON i.client_id = c.id 
+                LEFT JOIN services s ON i.service_id = s.id
+                LEFT JOIN pages p_name ON s.page_id = p_name.id
                 ORDER BY i.id DESC
             ");
             while ($row = $stmt->fetch()):
@@ -62,11 +83,16 @@ require_once '../includes/sidebar.php';
                 <td class="px-3 py-4 whitespace-nowrap font-medium text-blue-600 search-inv">
                     <a href="view_invoice.php?id=<?= $row['id'] ?>"><?= htmlspecialchars($row['invoice_number']) ?></a>
                 </td>
-                <td class="px-3 py-4 whitespace-nowrap search-client"><?= htmlspecialchars($row['client_name']) ?></td>
+                <td class="px-3 py-4 whitespace-nowrap">
+                    <div class="text-sm font-bold text-gray-900 search-client"><?= htmlspecialchars($row['client_name']) ?></div>
+                    <div class="text-xs text-gray-500 search-page"><?= htmlspecialchars($row['page_name'] ?: 'N/A') ?></div>
+                </td>
                 <td class="px-3 py-4 whitespace-nowrap"><?= (float)$row['quantity'] ?></td>
                 <td class="px-3 py-4 whitespace-nowrap font-semibold">৳<?= number_format($row['total_amount'], 2) ?></td>
                 <td class="px-3 py-4 whitespace-nowrap text-green-600 font-semibold">৳<?= number_format($display_paid, 2) ?></td>
-                <td class="px-3 py-4 whitespace-nowrap text-red-500 font-semibold">৳<?= number_format($due_amount, 2) ?></td>
+                <td class="px-3 py-4 whitespace-nowrap font-semibold <?= $due_amount <= 0 ? 'text-green-600' : 'text-red-600' ?>">
+                    ৳<?= number_format($due_amount, 2) ?>
+                </td>
                 <td class="px-3 py-4 whitespace-nowrap">
                     <?php if ($row['status'] == 'Paid'): ?>
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Paid</span>
@@ -101,8 +127,9 @@ require_once '../includes/sidebar.php';
         rows.forEach(row => {
             const invNum = row.querySelector('.search-inv').textContent.toLowerCase();
             const clientName = row.querySelector('.search-client').textContent.toLowerCase();
+            const pageName = row.querySelector('.search-page').textContent.toLowerCase();
             
-            if (invNum.includes(searchTerm) || clientName.includes(searchTerm)) {
+            if (invNum.includes(searchTerm) || clientName.includes(searchTerm) || pageName.includes(searchTerm)) {
                 row.classList.remove('hidden');
             } else {
                 row.classList.add('hidden');

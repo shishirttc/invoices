@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (!isset($_GET['id'])) {
     header("Location: payment_history.php");
@@ -52,6 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     $upd_stmt = $pdo->prepare("UPDATE invoices SET status = ? WHERE id = ?");
     $upd_stmt->execute([$new_status, $invoice_id]);
+
+    // Fetch client name for logging
+    $log_stmt = $pdo->prepare("SELECT name FROM clients WHERE id = (SELECT client_id FROM invoices WHERE id = ?)");
+    $log_stmt->execute([$invoice_id]);
+    $client_name = $log_stmt->fetchColumn() ?: "Unknown";
+
+    log_activity($pdo, "Edit Payment", "Updated payment of $amount BDT for $client_name (Inv #{$payment['invoice_number']})");
 
     header("Location: payment_history.php");
     exit;

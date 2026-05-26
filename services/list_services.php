@@ -1,9 +1,26 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
-    $pdo->prepare("DELETE FROM services WHERE id = ?")->execute([$id]);
+    
+    // Fetch details for logging
+    $stmt = $pdo->prepare("
+        SELECT s.service_type, s.total, c.name as client_name, p.page_name 
+        FROM services s 
+        JOIN clients c ON s.client_id = c.id 
+        JOIN pages p ON s.page_id = p.id 
+        WHERE s.id = ?
+    ");
+    $stmt->execute([$id]);
+    $service = $stmt->fetch();
+
+    if ($service) {
+        $pdo->prepare("DELETE FROM services WHERE id = ?")->execute([$id]);
+        log_activity($pdo, "Delete Service", "Deleted service: {$service['service_type']} ({$service['total']} BDT) for {$service['client_name']} ({$service['page_name']})");
+    }
+
     header("Location: list_services.php");
     exit;
 }

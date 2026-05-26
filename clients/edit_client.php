@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (!isset($_GET['id'])) {
     header("Location: list_clients.php");
@@ -26,6 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $stmt = $pdo->prepare("UPDATE clients SET name = ?, company_name = ?, phone = ?, email = ?, address = ?, notes = ? WHERE id = ?");
     $stmt->execute([$name, $company_name, $phone, $email, $address, $notes, $id]);
+    
+    log_activity($pdo, "Edit Client", "Updated client details for: $name");
     
     header("Location: list_clients.php");
     exit;

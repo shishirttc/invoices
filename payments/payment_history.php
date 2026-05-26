@@ -1,24 +1,45 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (isset($_GET['delete']) && isset($_GET['invoice_id'])) {
     $id = $_GET['delete'];
     $inv_id = $_GET['invoice_id'];
     
-    // Delete payment
-    $pdo->prepare("DELETE FROM payments WHERE id = ?")->execute([$id]);
+    // Fetch details for logging before deleting
+    $log_stmt = $pdo->prepare("
+        SELECT p.amount, i.invoice_number, c.name as client_name 
+        FROM payments p 
+        JOIN invoices i ON p.invoice_id = i.id 
+        JOIN clients c ON i.client_id = c.id 
+        WHERE p.id = ?
+    ");
+    $log_stmt->execute([$id]);
+    $payment = $log_stmt->fetch();
+
+    if ($payment) {
+        $details = "Deleted payment of ৳{$payment['amount']} for {$payment['client_name']} (Inv #{$payment['invoice_number']})";
+        
+        // Delete payment
+        $pdo->prepare("DELETE FROM payments WHERE id = ?")->execute([$id]);
+        log_activity($pdo, "Delete Payment", $details);
+    }
     
     // Recalculate invoice status
-    $stmt = $pdo->prepare("SELECT total_amount FROM invoices WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT total_amount, applied_credit FROM invoices WHERE id = ?");
     $stmt->execute([$inv_id]);
     $invoice = $stmt->fetch();
     
-    $pay_stmt = $pdo->prepare("SELECT SUM(amount) as paid FROM payments WHERE invoice_id = ?");
+    $pay_stmt = $pdo->prepare("SELECT SUM(amount) as paid, SUM(discount) as discount FROM payments WHERE invoice_id = ?");
     $pay_stmt->execute([$inv_id]);
-    $total_paid = $pay_stmt->fetch()['paid'] ?: 0;
+    $pay_data = $pay_stmt->fetch();
+    $total_paid = $pay_data['paid'] ?: 0;
+    $total_discount = $pay_data['discount'] ?: 0;
+    
+    $payable = $invoice['total_amount'] - $invoice['applied_credit'] - $total_discount;
     
     $new_status = 'Unpaid';
-    if ($total_paid >= $invoice['total_amount']) {
+    if ($total_paid >= $payable) {
         $new_status = 'Paid';
     } elseif ($total_paid > 0) {
         $new_status = 'Partial';
@@ -40,7 +61,7 @@ require_once '../includes/sidebar.php';
         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
             <i class="fas fa-search"></i>
         </span>
-        <input type="text" id="paymentSearch" placeholder="Search client, invoice # or method..." class="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" id="paymentSearch" placeholder="Search client, invoice #, page or method..." class="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
     </div>
 </div>
 
@@ -59,10 +80,12 @@ require_once '../includes/sidebar.php';
         <tbody class="bg-white divide-y divide-gray-200">
             <?php
             $stmt = $pdo->query("
-                SELECT p.*, i.invoice_number, c.name as client_name 
+                SELECT p.*, i.invoice_number, c.name as client_name, p_name.page_name
                 FROM payments p 
                 JOIN invoices i ON p.invoice_id = i.id 
                 JOIN clients c ON i.client_id = c.id 
+                LEFT JOIN services s ON i.service_id = s.id
+                LEFT JOIN pages p_name ON s.page_id = p_name.id
                 ORDER BY p.payment_date DESC, p.id DESC
             ");
             while ($row = $stmt->fetch()):
@@ -72,7 +95,10 @@ require_once '../includes/sidebar.php';
                 <td class="px-6 py-4 whitespace-nowrap font-medium text-blue-600 search-inv">
                     <a href="../invoices/view_invoice.php?id=<?= $row['invoice_id'] ?>"><?= htmlspecialchars($row['invoice_number']) ?></a>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap search-client"><?= htmlspecialchars($row['client_name']) ?></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-bold text-gray-900 search-client"><?= htmlspecialchars($row['client_name']) ?></div>
+                    <div class="text-xs text-gray-500 search-page"><?= htmlspecialchars($row['page_name'] ?: 'N/A') ?></div>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded bg-gray-100 text-gray-800 search-method">
                         <?= htmlspecialchars($row['payment_method']) ?>
@@ -100,11 +126,12 @@ require_once '../includes/sidebar.php';
         rows.forEach(row => {
             const invNum = row.querySelector('.search-inv').textContent.toLowerCase();
             const clientName = row.querySelector('.search-client').textContent.toLowerCase();
+            const pageName = row.querySelector('.search-page').textContent.toLowerCase();
             const method = row.querySelector('.search-method').textContent.toLowerCase();
             const noteElem = row.querySelector('.search-note');
             const note = noteElem ? noteElem.textContent.toLowerCase() : '';
             
-            if (invNum.includes(searchTerm) || clientName.includes(searchTerm) || method.includes(searchTerm) || note.includes(searchTerm)) {
+            if (invNum.includes(searchTerm) || clientName.includes(searchTerm) || pageName.includes(searchTerm) || method.includes(searchTerm) || note.includes(searchTerm)) {
                 row.classList.remove('hidden');
             } else {
                 row.classList.add('hidden');

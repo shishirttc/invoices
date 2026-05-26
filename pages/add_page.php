@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $client_id = $_POST['client_id'];
@@ -9,6 +10,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt = $pdo->prepare("INSERT INTO pages (client_id, page_name, page_url) VALUES (?, ?, ?)");
     $stmt->execute([$client_id, $page_name, $page_url]);
     
+    // Fetch client name for logging
+    $cl_stmt = $pdo->prepare("SELECT name FROM clients WHERE id = ?");
+    $cl_stmt->execute([$client_id]);
+    $client_name = $cl_stmt->fetchColumn() ?: "Unknown";
+
+    log_activity($pdo, "Add Page", "Added new page: $page_name for $client_name");
+
     header("Location: list_pages.php");
     exit;
 }

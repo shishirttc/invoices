@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 // Generate Invoice Number (using next AUTO_INCREMENT to prevent reuse of deleted IDs)
 $stmt = $pdo->query("SELECT AUTO_INCREMENT FROM information_schema.tables WHERE table_name = 'invoices' AND table_schema = DATABASE()");
@@ -42,6 +43,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt = $pdo->prepare("INSERT INTO invoices (invoice_number, client_id, service_id, unit_amount, quantity, total_amount, applied_credit, notes, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([$invoice_number, $client_id, $service_id, $unit_amount, $quantity, $total_amount, $applied_credit, $notes, $status, $created_at]);
     $new_invoice_id = $pdo->lastInsertId();
+    
+    // Fetch names for logging
+    $log_stmt = $pdo->prepare("SELECT c.name as client_name, p.page_name FROM clients c JOIN services s ON c.id = s.client_id JOIN pages p ON s.page_id = p.id WHERE s.id = ?");
+    $log_stmt->execute([$service_id]);
+    $log_data = $log_stmt->fetch();
+    $client_name = $log_data['client_name'] ?? 'Unknown';
+    $page_name = $log_data['page_name'] ?? 'Unknown';
+
+    // Log activity
+    log_activity($pdo, "Create Invoice", "Created invoice #$invoice_number for $client_name ($page_name). Amount: $total_amount BDT");
     
     header("Location: view_invoice.php?id=" . $new_invoice_id);
     exit;
@@ -115,7 +126,7 @@ require_once '../includes/sidebar.php';
                 Apply Credit (৳) 
                 <span id="avail_credit_badge" class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded hidden cursor-pointer hover:bg-green-200" title="Click to apply all">Available: ৳<span>0.00</span></span>
             </label>
-            <input type="number" step="0.01" id="applied_credit" name="applied_credit" value="0.00" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <input type="number" step="0.01" id="applied_credit" name="applied_credit" value="" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="0.00">
         </div>
 
         <div class="mb-4">
@@ -168,7 +179,7 @@ require_once '../includes/sidebar.php';
         serviceSelect.innerHTML = '<option value="">-- Select Service --</option>';
         unitAmountInput.value = '0.00';
         quantityInput.value = '';
-        appliedCreditInput.value = '0.00';
+        appliedCreditInput.value = '';
         calculateTotals();
         
         if(clientId) {
@@ -207,21 +218,11 @@ require_once '../includes/sidebar.php';
         if(selectedOption && selectedOption.value !== "") {
             unitAmountInput.value = parseFloat(selectedOption.dataset.total).toFixed(2);
             quantityInput.value = '1';
-            
-            // Auto-apply credit if available
-            const clientId = clientSelect.value;
-            const client = allClients.find(c => c.id == clientId);
-            if(client && parseFloat(client.balance) > 0) {
-                const available = parseFloat(client.balance);
-                const serviceTotal = parseFloat(selectedOption.dataset.total);
-                appliedCreditInput.value = Math.min(available, serviceTotal).toFixed(2);
-            } else {
-                appliedCreditInput.value = '0.00';
-            }
+            appliedCreditInput.value = '';
         } else {
             unitAmountInput.value = '0.00';
             quantityInput.value = '';
-            appliedCreditInput.value = '0.00';
+            appliedCreditInput.value = '';
         }
         calculateTotals();
     });
@@ -230,6 +231,11 @@ require_once '../includes/sidebar.php';
     quantityInput.addEventListener('input', calculateTotals);
 
     appliedCreditInput.addEventListener('input', function() {
+        if (this.value === '') {
+            calculateTotals();
+            return;
+        }
+
         const clientId = clientSelect.value;
         const client = allClients.find(c => c.id == clientId);
         const maxCredit = client ? parseFloat(client.balance) : 0;
@@ -239,7 +245,11 @@ require_once '../includes/sidebar.php';
         if (value > maxCredit) value = maxCredit;
         if (value > serviceTotal) value = serviceTotal;
 
-        this.value = value.toFixed(2);
+        // Only format to fixed if the user is not actively typing or it exceeds limits
+        if (parseFloat(this.value) > value) {
+            this.value = value.toFixed(2);
+        }
+        
         calculateTotals();
     });
 

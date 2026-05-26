@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $client_id = $_POST['client_id'];
@@ -10,6 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt = $pdo->prepare("INSERT INTO services (client_id, page_id, service_type, charge) VALUES (?, ?, ?, ?)");
     $stmt->execute([$client_id, $page_id, $service_type, $charge]);
     
+    // Fetch details for logging
+    $cl_stmt = $pdo->prepare("SELECT c.name as client_name, p.page_name FROM clients c JOIN pages p ON c.id = p.client_id WHERE p.id = ?");
+    $cl_stmt->execute([$page_id]);
+    $log_data = $cl_stmt->fetch();
+    $client_name = $log_data['client_name'] ?? 'Unknown';
+    $page_name = $log_data['page_name'] ?? 'Unknown';
+
+    log_activity($pdo, "Add Service", "Added new service: $service_type ($charge BDT) for $client_name ($page_name)");
+
     header("Location: list_services.php");
     exit;
 }

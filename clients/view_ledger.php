@@ -186,7 +186,7 @@ function copyToClipboard(text) {
     </div>
     <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
         <p class="text-sm text-gray-500 uppercase font-bold">Balance Due</p>
-        <p class="text-2xl font-bold text-red-600">৳<?= number_format($balance_due, 2) ?></p>
+        <p class="text-2xl font-bold <?= $balance_due <= 0 ? 'text-green-600' : 'text-red-600' ?>">৳<?= number_format($balance_due, 2) ?></p>
     </div>
 </div>
 

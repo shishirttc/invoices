@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 if (!isset($_GET['invoice_id'])) {
     header("Location: ../invoices/list_invoices.php");
@@ -70,6 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     $upd_stmt = $pdo->prepare("UPDATE invoices SET status = ? WHERE id = ?");
     $upd_stmt->execute([$new_status, $invoice_id]);
+
+    // Fetch client name for logging
+    $log_stmt = $pdo->prepare("SELECT c.name FROM clients c JOIN invoices i ON c.id = i.client_id WHERE i.id = ?");
+    $log_stmt->execute([$invoice_id]);
+    $client_name = $log_stmt->fetchColumn() ?: "Unknown";
+
+    // Log activity
+    log_activity($pdo, "Add Payment", "Recorded payment of $amount BDT for $client_name (Inv #{$invoice['invoice_number']}). Method: $payment_method");
 
     header("Location: ../invoices/view_invoice.php?id=" . $invoice_id);
     exit;
