@@ -260,13 +260,9 @@ $available_months = $months->fetchAll(PDO::FETCH_COLUMN);
                                             <?= $inv['status'] ?>
                                         </span>
                                     </td>
-                                    <td class="px-8 py-5 text-right flex justify-end gap-2">
-                                        <a href="../invoices/generate_pdf.php?id=<?= $inv['id'] ?>&token=<?= $token ?>" target="_blank" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white transition-all inline-flex items-center justify-center" title="View">
-                                            <i class="fas fa-eye text-xs"></i>
-                                        </a>
-                                        <a href="../invoices/generate_pdf.php?id=<?= $inv['id'] ?>&token=<?= $token ?>" target="_blank" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white transition-all inline-flex items-center justify-center" title="Download PDF">
-                                            <i class="fas fa-download text-xs"></i>
-                                        </a>
+                                    <td class="px-8 py-5 text-right">
+                                        <a href="../invoices/generate_pdf.php?id=<?= $inv['id'] ?>&token=<?= $token ?>" target="_blank" class="text-blue-600 hover:text-blue-900 mr-2" title="View"><i class="fas fa-eye"></i></a>
+                                        <a href="../invoices/generate_pdf.php?id=<?= $inv['id'] ?>&token=<?= $token ?>" target="_blank" class="text-gray-600 hover:text-gray-900" title="PDF"><i class="fas fa-file-pdf"></i></a>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
