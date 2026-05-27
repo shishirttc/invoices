@@ -41,6 +41,7 @@ require_once '../includes/sidebar.php';
     <table class="min-w-full divide-y divide-gray-200" id="pagesTable">
         <thead class="bg-gray-50">
             <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">SL</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Page Name</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Page URL</th>
@@ -50,9 +51,11 @@ require_once '../includes/sidebar.php';
         <tbody class="bg-white divide-y divide-gray-200">
             <?php
             $stmt = $pdo->query("SELECT p.*, c.name as client_name FROM pages p JOIN clients c ON p.client_id = c.id ORDER BY p.id DESC");
+            $sl = 1;
             while ($row = $stmt->fetch()):
             ?>
             <tr class="page-row">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= $sl++ ?></td>
                 <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 search-client"><?= htmlspecialchars($row['client_name']) ?></td>
                 <td class="px-6 py-4 whitespace-nowrap search-page"><?= htmlspecialchars($row['page_name']) ?></td>
                 <td class="px-6 py-4 whitespace-nowrap">

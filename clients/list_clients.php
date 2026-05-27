@@ -41,6 +41,7 @@ require_once '../includes/sidebar.php';
     <table class="min-w-full divide-y divide-gray-200" id="clientsTable">
         <thead class="bg-gray-50">
             <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">SL</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
@@ -51,6 +52,7 @@ require_once '../includes/sidebar.php';
         <tbody class="bg-white divide-y divide-gray-200">
             <?php
             $stmt = $pdo->query("SELECT * FROM clients ORDER BY id DESC");
+            $sl = 1;
             while ($row = $stmt->fetch()):
                 // Calculate Balance Due exactly like view_ledger.php
                 $balance_due = 0;
@@ -72,6 +74,7 @@ require_once '../includes/sidebar.php';
                 $credit_balance = $row['balance'];
             ?>
             <tr class="client-row">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= $sl++ ?></td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <a href="view_ledger.php?id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-900 font-bold search-name">
                         <?= htmlspecialchars($row['name']) ?>

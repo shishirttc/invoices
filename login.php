@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </form>
 
         <div class="mt-8 text-center text-gray-400 text-xs uppercase tracking-widest font-bold">
-            Rajshahi, Bangladesh
+            222, Kadirganj, Boalia, Rajshahi, Bangladesh
         </div>
     </div>
 </body>

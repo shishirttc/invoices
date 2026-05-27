@@ -47,6 +47,7 @@ require_once '../includes/sidebar.php';
     <table class="min-w-full divide-y divide-gray-200" id="servicesTable">
         <thead class="bg-gray-50">
             <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">SL</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client / Page</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service Type</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Charge</th>
@@ -62,9 +63,11 @@ require_once '../includes/sidebar.php';
                 JOIN pages p ON s.page_id = p.id 
                 ORDER BY s.id DESC
             ");
+            $sl = 1;
             while ($row = $stmt->fetch()):
             ?>
             <tr class="service-row">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= $sl++ ?></td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="font-medium text-gray-900 search-client"><?= htmlspecialchars($row['client_name']) ?></div>
                     <div class="text-sm text-gray-500 search-page"><?= htmlspecialchars($row['page_name']) ?></div>

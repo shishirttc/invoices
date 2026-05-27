@@ -94,7 +94,7 @@ $html = '
                 <td>
                     <div class="company-name">Siddik IT Ltd.</div>
                     <div>Digital Marketing Agency</div>
-                    <div>Rajshahi, Bangladesh</div>
+                    <div>222, Kadirganj, Boalia, Rajshahi, Bangladesh</div>
                     <div style="font-weight: bold; margin-top: 5px;">Md. Salahuddin Shishir</div>
                     <div style="font-size: 11px;">Mobile: +8801758-330079 (WhatsApp)</div>
                     
@@ -115,8 +115,8 @@ $html = '
         <tr>
             <td style="width: 50%;">
                 <div class="text-bold">Billed To:</div>
-                <div style="font-size: 14px; margin-bottom: 2px;">'.$invoice['name'].'</div>
-                '.($invoice['company_name'] ? "<div>".$invoice['company_name']."</div>" : "").'
+                <div style="font-size: 15px; font-weight: bold; margin-bottom: 2px;">'.$invoice['name'].'</div>
+                <div style="font-size: 13px; font-weight: bold; color: #444; margin-bottom: 3px;">Page Name: '.$invoice['page_name'].'</div>
                 <div>'.nl2br($invoice['address']).'</div>
                 <div>'.$invoice['phone'].'</div>
                 <div>'.$invoice['email'].'</div>
@@ -136,8 +136,8 @@ $html = '
         <tbody>
             <tr>
                 <td>
-                    <div class="text-bold">'.$invoice['service_type'].'</div>
-                    <div style="font-size: 11px; color: #666;">Page: '.$invoice['page_name'].'</div>
+                    <div class="text-bold" style="font-size: 14px;">'.$invoice['service_type'].'</div>
+                    <div style="font-size: 11px; color: #666; font-weight: bold; margin-top: 2px;">Page: '.$invoice['page_name'].'</div>
                 </td>
                 <td class="text-center">'.$invoice['quantity'].'</td>
                 <td class="text-right">TK '.number_format($invoice['unit_amount'], 2).'</td>

@@ -8,7 +8,7 @@ if (!isset($_GET['id'])) {
 
 $id = $_GET['id'];
 $stmt = $pdo->prepare("
-    SELECT i.*, c.name, c.company_name, c.address, c.phone, c.email,
+    SELECT i.*, c.name, c.company_name, c.address, c.phone, c.email, c.ledger_token,
            s.service_type, p.page_name, p.page_url
     FROM invoices i
     JOIN clients c ON i.client_id = c.id
@@ -59,7 +59,19 @@ require_once '../includes/sidebar.php';
             $wa_phone = '88' . $wa_phone;
         }
         
-        $message = "Hello " . $invoice['name'] . ",\n\n*Md. Salahuddin Shishir*\n+8801758330079\n\nThis is an invoice from *Siddik IT Ltd*.\n\n*Invoice #*: " . $invoice['invoice_number'] . "\n*Service*: " . $invoice['service_type'] . "\n*Total Amount*: ৳" . number_format($invoice['total_amount'], 2) . "\n*Credit Applied*: ৳" . number_format($invoice['applied_credit'], 2) . "\n*Discount*: ৳" . number_format($total_discount, 2) . "\n*Due Amount*: ৳" . number_format($due_amount, 2) . "\n\nঅনুগ্রহ করে যত দ্রুত সম্ভব পেমেন্টটি পরিশোধ করুন। ধন্যবাদ";
+        $ledger_url = "https://invoice.unaux.com/ledger/" . $invoice['ledger_token'];
+        
+        $message = "Hello " . $invoice['name'] . ",\n\n*Md. Salahuddin Shishir*\n+8801758330079\n\nThis is an invoice update from *Siddik IT Ltd*.\n\n*Invoice #*: " . $invoice['invoice_number'] . "\n*Service*: " . $invoice['service_type'] . "\n\n*Total Amount*: ৳" . number_format($invoice['total_amount'], 2);
+        
+        if ($invoice['applied_credit'] > 0) {
+            $message .= "\n*Adjustment*: ৳" . number_format($invoice['applied_credit'], 2);
+        }
+        if ($total_discount > 0) {
+            $message .= "\n*Discount*: ৳" . number_format($total_discount, 2);
+        }
+        
+        $message .= "\n*Paid Amount*: ৳" . number_format($total_paid, 2) . "\n*Due Amount*: ৳" . number_format($due_amount, 2) . "\n\nঅনুগ্রহ করে পেমেন্টটি পরিশোধ করুন। ধন্যবাদ\n\nYou can also view your full statement here: " . $ledger_url;
+        
         $wa_url = "https://wa.me/" . $wa_phone . "?text=" . urlencode($message);
         ?>
         <a href="<?= $wa_url ?>" target="_blank" class="flex-1 sm:flex-none text-center bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
@@ -73,7 +85,7 @@ require_once '../includes/sidebar.php';
         <div>
             <h1 class="text-3xl font-bold text-blue-600">Siddik IT Ltd.</h1>
             <p class="text-gray-500 mt-1">Digital Marketing Agency</p>
-            <p class="text-gray-500">Rajshahi, Bangladesh</p>
+            <p class="text-gray-500">222, Kadirganj, Boalia, Rajshahi, Bangladesh</p>
             <p class="text-gray-600 font-medium mt-2">Md. Salahuddin Shishir</p>
             <p class="text-gray-500 text-sm">Mobile: +8801758-330079 (WhatsApp)</p>
         </div>
@@ -95,8 +107,8 @@ require_once '../includes/sidebar.php';
 
     <div class="mb-8">
         <h4 class="font-bold text-gray-700 mb-2">Invoice To:</h4>
-        <p class="font-semibold text-gray-800"><?= htmlspecialchars($invoice['name']) ?></p>
-        <?php if($invoice['company_name']) echo "<p class='text-gray-600'>".htmlspecialchars($invoice['company_name'])."</p>"; ?>
+        <p class="font-semibold text-gray-800 text-lg"><?= htmlspecialchars($invoice['name']) ?></p>
+        <p class="text-base text-gray-600 font-bold mb-1">Page Name: <?= htmlspecialchars($invoice['page_name']) ?></p>
         <p class="text-gray-600"><?= nl2br(htmlspecialchars($invoice['address'])) ?></p>
         <p class="text-gray-600"><?= htmlspecialchars($invoice['phone']) ?></p>
         <p class="text-gray-600"><?= htmlspecialchars($invoice['email']) ?></p>
@@ -115,8 +127,8 @@ require_once '../includes/sidebar.php';
             <tbody>
                 <tr class="border-b border-gray-200">
                     <td class="py-4">
-                        <div class="font-bold text-gray-800"><?= htmlspecialchars($invoice['service_type']) ?></div>
-                        <div class="text-sm text-gray-500">Page: <?= htmlspecialchars($invoice['page_name']) ?></div>
+                        <div class="font-bold text-gray-800 text-base"><?= htmlspecialchars($invoice['service_type']) ?></div>
+                        <div class="text-xs text-gray-500 font-bold mt-0.5">Page: <?= htmlspecialchars($invoice['page_name']) ?></div>
                         <?php if($invoice['page_url']): ?>
                             <div class="text-xs text-blue-500 break-all"><?= htmlspecialchars($invoice['page_url']) ?></div>
                         <?php endif; ?>

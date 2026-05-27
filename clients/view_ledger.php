@@ -119,7 +119,7 @@ $base_url = dirname($dir); // Go up one level from 'clients' folder
 if ($base_url == '/' || $base_url == '\\') {
     $base_url = '';
 }
-$public_link = $protocol . "://" . $host . $base_url . "/public_ledger.php?token=" . $client['ledger_token'];
+$public_link = $protocol . "://" . $host . $base_url . "/ledger/" . $client['ledger_token'];
 ?>
 
 <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
@@ -248,6 +248,7 @@ function copyToClipboard(text) {
                 <thead class="bg-gray-50 text-xs">
                     <tr>
                         <th class="px-6 py-3 text-left font-medium text-gray-500 uppercase">Inv #</th>
+                        <th class="px-6 py-3 text-left font-medium text-gray-500 uppercase">USD</th>
                         <th class="px-6 py-3 text-left font-medium text-gray-500 uppercase">Amount</th>
                         <th class="px-6 py-3 text-left font-medium text-gray-500 uppercase">Status</th>
                         <th class="px-6 py-3 text-right font-medium text-gray-500 uppercase">Action</th>
@@ -255,11 +256,12 @@ function copyToClipboard(text) {
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     <?php if(empty($invoices)): ?>
-                        <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No invoices found.</td></tr>
+                        <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No invoices found.</td></tr>
                     <?php else: ?>
                         <?php foreach($invoices as $inv): ?>
                         <tr>
                             <td class="px-6 py-4 text-sm font-medium text-gray-900"><?= htmlspecialchars($inv['invoice_number']) ?></td>
+                            <td class="px-6 py-4 text-sm">$<?= number_format($inv['quantity'], 2) ?></td>
                             <td class="px-6 py-4 text-sm">৳<?= number_format($inv['total_amount'], 2) ?></td>
                             <td class="px-6 py-4">
                                 <span class="px-2 py-1 text-xs rounded-full <?= $inv['status'] == 'Paid' ? 'bg-green-100 text-green-800' : ($inv['status'] == 'Partial' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') ?>">

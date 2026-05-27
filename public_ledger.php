@@ -234,6 +234,7 @@ $available_months = $months->fetchAll(PDO::FETCH_COLUMN);
                         <thead>
                             <tr class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b bg-slate-50/30">
                                 <th class="px-8 py-4">Invoice Details</th>
+                                <th class="px-4 py-4 text-center">USD</th>
                                 <th class="px-4 py-4">Amount</th>
                                 <th class="px-4 py-4 text-center">Status</th>
                                 <th class="px-8 py-4 text-right">Download</th>
@@ -241,7 +242,7 @@ $available_months = $months->fetchAll(PDO::FETCH_COLUMN);
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             <?php if(empty($invoices)): ?>
-                                <tr><td colspan="4" class="px-8 py-12 text-center text-slate-400 italic">No invoices found.</td></tr>
+                                <tr><td colspan="5" class="px-8 py-12 text-center text-slate-400 italic">No invoices found.</td></tr>
                             <?php else: ?>
                                 <?php foreach($invoices as $inv): ?>
                                 <tr class="hover:bg-slate-50 transition-colors group">
@@ -249,6 +250,7 @@ $available_months = $months->fetchAll(PDO::FETCH_COLUMN);
                                         <p class="font-bold text-slate-700 text-sm">#<?= htmlspecialchars($inv['invoice_number']) ?></p>
                                         <p class="text-[10px] text-slate-400 mt-0.5"><?= date('d M, Y', strtotime($inv['created_at'])) ?></p>
                                     </td>
+                                    <td class="px-4 py-5 text-center font-semibold text-slate-600 text-sm">$<?= number_format($inv['quantity'], 2) ?></td>
                                     <td class="px-4 py-5 font-semibold text-slate-800 text-sm">৳<?= number_format($inv['total_amount'], 2) ?></td>
                                     <td class="px-4 py-5 text-center">
                                         <?php 
@@ -258,8 +260,11 @@ $available_months = $months->fetchAll(PDO::FETCH_COLUMN);
                                             <?= $inv['status'] ?>
                                         </span>
                                     </td>
-                                    <td class="px-8 py-5 text-right">
-                                        <a href="invoices/generate_pdf.php?id=<?= $inv['id'] ?>&token=<?= $token ?>" target="_blank" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white transition-all inline-flex items-center justify-center">
+                                    <td class="px-8 py-5 text-right flex justify-end gap-2">
+                                        <a href="../invoices/generate_pdf.php?id=<?= $inv['id'] ?>&token=<?= $token ?>" target="_blank" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white transition-all inline-flex items-center justify-center" title="View">
+                                            <i class="fas fa-eye text-xs"></i>
+                                        </a>
+                                        <a href="../invoices/generate_pdf.php?id=<?= $inv['id'] ?>&token=<?= $token ?>" target="_blank" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white transition-all inline-flex items-center justify-center" title="Download PDF">
                                             <i class="fas fa-download text-xs"></i>
                                         </a>
                                     </td>
@@ -326,7 +331,7 @@ $available_months = $months->fetchAll(PDO::FETCH_COLUMN);
                 </div>
             </div>
             <p class="text-slate-400 text-sm">&copy; <?= date('Y') ?> <span class="font-bold text-slate-600">Siddik IT Ltd.</span></p>
-            <p class="text-slate-400 text-[10px] mt-1 italic">Crafted for Excellence | Rajshahi, Bangladesh</p>
+            <p class="text-slate-400 text-[10px] mt-1 italic">Crafted for Excellence | 222, Kadirganj, Boalia, Rajshahi, Bangladesh</p>
         </div>
     </div>
 
