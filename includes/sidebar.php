@@ -5,7 +5,7 @@ $dir = dirname($script_name);
 $base_url = ($dir == DIRECTORY_SEPARATOR || $dir == '/') ? '' : $dir;
 
 // If we are already in a subfolder, we need the parent for the base URL
-if (in_array(basename($dir), ['clients', 'invoices', 'payments', 'services', 'pages'])) {
+if (in_array(basename($dir), ['clients', 'invoices', 'payments', 'services', 'pages', 'expenses'])) {
     $base_url = dirname($dir);
 }
 // Ensure base_url is empty string if it's just a slash (root)
@@ -27,7 +27,7 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
         </button>
     </div>
     <nav class="flex-1 overflow-y-auto py-4 space-y-1 px-3">
-        <a href="<?= $base_url ?>/dashboard.php" class="flex items-center gap-3 px-4 py-3 rounded-lg <?= $current_page == 'dashboard.php' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?>">
+        <a href="<?= $base_url ?>/dashboard.php" class="flex items-center gap-3 px-4 py-3 rounded-lg <?= ($current_page == 'dashboard.php' && ($current_dir != 'expenses' && $current_dir != 'clients' && $current_dir != 'invoices' && $current_dir != 'payments' && $current_dir != 'services' && $current_dir != 'pages')) ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?>">
             <i class="fas fa-home w-5"></i> Dashboard
         </a>
         <a href="<?= $base_url ?>/clients/list_clients.php" class="flex items-center gap-3 px-4 py-3 rounded-lg <?= $current_dir == 'clients' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?>">
@@ -47,6 +47,9 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
         </a>
         <a href="<?= $base_url ?>/logs.php" class="flex items-center gap-3 px-4 py-3 rounded-lg <?= $current_page == 'logs.php' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?>">
             <i class="fas fa-history w-5"></i> Activity Logs
+        </a>
+        <a href="<?= $base_url ?>/expenses/dashboard.php" class="flex items-center gap-3 px-4 py-3 rounded-lg <?= $current_dir == 'expenses' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?>">
+            <i class="fas fa-chart-pie w-5"></i> Income & Expense
         </a>
         <a href="<?= $base_url ?>/logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-900 hover:text-white mt-auto">
             <i class="fas fa-sign-out-alt w-5"></i> Logout

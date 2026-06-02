@@ -342,7 +342,7 @@ $available_months = $months->fetchAll(PDO::FETCH_COLUMN);
                 <!-- Decor -->
                 <div class="absolute top-[-50%] right-[-50%] w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
             </div>
-            <form action="payments/bkash_create.php" method="POST" class="p-10">
+            <form action="../payments/bkash_create.php" method="POST" class="p-10">
                 <input type="hidden" name="client_id" value="<?= $client_id ?>">
                 <input type="hidden" name="token" value="<?= $token ?>">
                 
@@ -350,7 +350,7 @@ $available_months = $months->fetchAll(PDO::FETCH_COLUMN);
                     <label class="block text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 px-1">Amount to Pay (BDT)</label>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">৳</span>
-                        <input type="number" step="0.01" name="amount" value="<?= $balance_due ?>" max="<?= $balance_due ?>" min="1" required class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 pl-10 pr-4 text-slate-800 font-black text-2xl focus:outline-none focus:border-[#e2136e] transition-all">
+                        <input type="number" step="0.01" name="amount" value="<?= $balance_due ?>" min="1" required class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 pl-10 pr-4 text-slate-800 font-black text-2xl focus:outline-none focus:border-[#e2136e] transition-all">
                     </div>
                 </div>
                 

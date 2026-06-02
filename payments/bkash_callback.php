@@ -36,7 +36,7 @@ if ($status === 'success') {
     curl_close($ch);
 
     if ($curl_error) {
-        header("Location: ../public_ledger.php?token=$token&payment=failed&msg=" . urlencode("CURL Error (Execute): " . $curl_error));
+        header("Location: ../ledger/$token?payment=failed&msg=" . urlencode("CURL Error (Execute): " . $curl_error));
         exit;
     }
 
@@ -49,7 +49,7 @@ if ($status === 'success') {
         // If it's already completed and we don't have response fields like trxID in the current call, 
         // we should just redirect to the ledger success page.
         if (!isset($response['trxID']) && isset($response['statusMessage']) && strpos($response['statusMessage'], 'Already Completed') !== false) {
-             header("Location: ../public_ledger.php?token=$token&payment=success&msg=already_done");
+             header("Location: ../ledger/$token?payment=success&msg=already_done");
              exit;
         }
 
@@ -105,14 +105,14 @@ if ($status === 'success') {
         log_activity($pdo, "bKash Payment", "Successful bKash payment of $amount BDT for $client_name. TrxID: $trxID");
 
         // Redirect back to public ledger with success message
-        header("Location: ../public_ledger.php?token=$token&payment=success&trxid=$trxID");
+        header("Location: ../ledger/$token?payment=success&trxid=$trxID");
         exit;
     } else {
-        header("Location: ../public_ledger.php?token=$token&payment=failed&msg=" . urlencode($response['statusMessage'] ?? 'Execution Failed'));
+        header("Location: ../ledger/$token?payment=failed&msg=" . urlencode($response['statusMessage'] ?? 'Execution Failed'));
         exit;
     }
 } else {
-    header("Location: ../public_ledger.php?token=$token&payment=cancelled");
+    header("Location: ../ledger/$token?payment=cancelled");
     exit;
 }
 ?>
